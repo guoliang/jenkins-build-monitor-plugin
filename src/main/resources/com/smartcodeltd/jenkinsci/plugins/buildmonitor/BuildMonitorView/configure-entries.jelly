@@ -46,6 +46,7 @@
 
   <f:entry title="${%Ordered by}">
     <select name="order" class="setting-input">
+      <f:option value="ByStatusAndName" selected="${it.currentOrder()=='ByStatusAndName'}">${%Status and name}</f:option>
       <f:option value="ByName" selected='${it.currentOrder()=="ByName"}'>${%Name}</f:option>
       <f:option value="ByDisplayName" selected="${it.currentOrder()=='ByDisplayName'}">${%Display name}</f:option>
     </select>
