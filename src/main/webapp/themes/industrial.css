@@ -96,10 +96,13 @@ h2 {
     margin: 0 0 0.5em 0;
 }
 
-.build-monitor .successful { background-color:darkgreen; }
-.build-monitor .failing    { background-color:darkred; }
-.build-monitor .claimed    { background-color: #fe5e00; }
-
+.build-monitor .successful { background-color: darkgreen; }
+.build-monitor .failing    { background-color: darkred; }
+.build-monitor .unstable   { background-color: gold; }
+.build-monitor .not_built  { background-color: grey; }
+.build-monitor .aborted    { background-color: darkgrey; }
+.build-monitor .claimed    { background-color: orange; }
+.build-monitor .unknown    { background-color: darkred; }
 
 /*
  * Striped background patterns inspired by Lea Verou
@@ -107,6 +110,7 @@ h2 {
  */
 .build-monitor .colour-blind-mode .successful,
 .build-monitor .colour-blind-mode .failing,
+.build-monitor .colour-blind-mode .unknown,
 .build-monitor .colour-blind-mode .claimed {
     -webkit-background-size: 50px 50px;
     -moz-background-size:    50px 50px;
@@ -115,6 +119,7 @@ h2 {
 
 .build-monitor .colour-blind-mode .successful { }
 
+.build-monitor .colour-blind-mode .unknown,
 .build-monitor .colour-blind-mode .failing {
     background-image: -webkit-gradient(linear, 0 100%, 100% 0,
         color-stop(.25, rgba(255, 255, 255, .2)), color-stop(.25, transparent),

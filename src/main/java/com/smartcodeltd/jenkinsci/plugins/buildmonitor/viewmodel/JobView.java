@@ -1,12 +1,21 @@
 package com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel;
 
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.BuildAugmentor;
-import hudson.model.*;
+import static hudson.model.Result.ABORTED;
+import static hudson.model.Result.FAILURE;
+import static hudson.model.Result.NOT_BUILT;
+import static hudson.model.Result.SUCCESS;
+import static hudson.model.Result.UNSTABLE;
+import hudson.model.Job;
+import hudson.model.Run;
+
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import java.util.*;
-
-import static hudson.model.Result.SUCCESS;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.BuildAugmentor;
 
 /**
  * @author Jan Molak
@@ -16,15 +25,15 @@ public class JobView {
     private final Job<?, ?> job;
     private final BuildAugmentor augmentor;
 
-    public static JobView of(Job<?, ?> job) {
+    public static JobView of(final Job<?, ?> job) {
         return new JobView(job, new BuildAugmentor(), new Date());
     }
 
-    public static JobView of(Job<?, ?> job, BuildAugmentor augmentor) {
+    public static JobView of(final Job<?, ?> job, final BuildAugmentor augmentor) {
         return new JobView(job, augmentor, new Date());
     }
 
-    public static JobView of(Job<?, ?> job, Date systemTime) {
+    public static JobView of(final Job<?, ?> job, final Date systemTime) {
         return new JobView(job, new BuildAugmentor(), systemTime);
     }
 
@@ -43,9 +52,19 @@ public class JobView {
     @JsonProperty
     public String status() {
         // todo: consider introducing a BuildResultJudge to keep this logic in one place
-        String status = lastCompletedBuild().result() == SUCCESS
-                ? "successful"
-                : "failing";
+        String status = "unknown";
+
+        if(lastCompletedBuild().result() == SUCCESS) {
+            status = "successful";
+        } else if(lastCompletedBuild().result() == FAILURE) {
+            status = "failing";
+        } else if(lastCompletedBuild().result() == NOT_BUILT) {
+            status = "not_built";
+        } else if(lastCompletedBuild().result() == ABORTED) {
+            status = "aborted";
+        } else if(lastCompletedBuild().result() == UNSTABLE) {
+            status = "unstable";
+        }
 
         if (lastBuild().isRunning()) {
             status += " running";
@@ -82,7 +101,7 @@ public class JobView {
         return formatted(lastBuild().estimatedDuration());
     }
 
-    private String formatted(Duration duration) {
+    private String formatted(final Duration duration) {
         return null != duration
                 ? duration.toString()
                 : "";
@@ -95,7 +114,7 @@ public class JobView {
 
     @JsonProperty
     public Set<String> culprits() {
-        Set<String> culprits = new HashSet<String>();
+        final Set<String> culprits = new HashSet<String>();
 
         BuildViewModel build = lastBuild();
         // todo: consider introducing a BuildResultJudge to keep this logic in one place
@@ -137,12 +156,13 @@ public class JobView {
         return lastCompletedBuild().knownFailures();
     }
 
+    @Override
     public String toString() {
         return name();
     }
 
 
-    private JobView(Job<?, ?> job, BuildAugmentor augmentor, Date systemTime) {
+    private JobView(final Job<?, ?> job, final BuildAugmentor augmentor, final Date systemTime) {
         this.job        = job;
         this.augmentor  = augmentor;
         this.systemTime = systemTime;
@@ -161,7 +181,7 @@ public class JobView {
         return previousBuild;
     }
 
-    private BuildViewModel buildViewOf(Run<?, ?> build) {
+    private BuildViewModel buildViewOf(final Run<?, ?> build) {
         if (null == build) {
             return new NullBuildView();
         }

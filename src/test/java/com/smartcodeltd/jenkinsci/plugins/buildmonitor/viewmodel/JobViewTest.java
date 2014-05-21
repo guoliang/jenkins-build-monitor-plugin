@@ -1,24 +1,13 @@
 package com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel;
 
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.Augmentation;
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.BuildAugmentor;
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.bfa.Analysis;
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.claim.Claim;
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.BuildStateRecipe;
-import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.JobStateRecipe;
-import hudson.model.Job;
-import hudson.model.Result;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
 import static com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.Loops.asFollows;
 import static com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.TimeMachine.assumeThat;
 import static com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.TimeMachine.assumeThatCurrentTime;
-import static hudson.model.Result.*;
+import static hudson.model.Result.ABORTED;
+import static hudson.model.Result.FAILURE;
+import static hudson.model.Result.NOT_BUILT;
+import static hudson.model.Result.SUCCESS;
+import static hudson.model.Result.UNSTABLE;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.contains;
@@ -29,6 +18,22 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import hudson.model.Job;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.Augmentation;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.BuildAugmentor;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.bfa.Analysis;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.plugins.claim.Claim;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.BuildStateRecipe;
+import com.smartcodeltd.jenkinsci.plugins.buildmonitor.viewmodel.syntacticsugar.JobStateRecipe;
 
 /**
  * @author Jan Molak
@@ -143,11 +148,11 @@ public class JobViewTest {
     @Test
     public void should_know_how_long_a_build_has_been_running_for() throws Exception {
 
-        String startTime              = "13:10:00",
+        final String startTime              = "13:10:00",
                sixSecondsLater        = "13:10:06",
                twoAndHalfMinutesLater = "13:12:30",
                anHourAndHalfLater     = "14:40:00";
-        Date   currentTime = assumeThatCurrentTime().is(startTime);
+        final Date   currentTime = assumeThatCurrentTime().is(startTime);
 
         view = JobView.of(
                 a(job().whereTheLast(build().startedAt(startTime).isStillBuilding())),
@@ -191,7 +196,7 @@ public class JobViewTest {
 
         assertThat(view.estimatedDuration(), is(""));
     }
-    
+
     /*
      * Should produce a meaningful status description that can be used in the CSS
      */
@@ -205,29 +210,44 @@ public class JobViewTest {
 
     @Test
     public void should_describe_the_job_as_failing_if_the_last_build_failed() {
-        for (Result result : asFollows(FAILURE, ABORTED, NOT_BUILT, UNSTABLE)) {
-            view = JobView.of(a(job().whereTheLast(build().finishedWith(result))));
+        view = JobView.of(a(job().whereTheLast(build().finishedWith(FAILURE))));
+        assertThat(view.status(), containsString("failing"));
+    }
 
-            assertThat(view.status(), containsString("failing"));
-        }
+    @Test
+    public void should_describe_the_job_as_aborted() {
+        view = JobView.of(a(job().whereTheLast(build().finishedWith(ABORTED))));
+        assertThat(view.status(), containsString("aborted"));
+    }
+
+    @Test
+    public void should_describe_the_job_as_not_built() {
+        view = JobView.of(a(job().whereTheLast(build().finishedWith(NOT_BUILT))));
+        assertThat(view.status(), containsString("not_built"));
+    }
+
+    @Test
+    public void should_describe_the_job_as_unstable() {
+        view = JobView.of(a(job().whereTheLast(build().finishedWith(UNSTABLE))));
+        assertThat(view.status(), containsString("unstable"));
     }
 
     @Test
     public void should_describe_the_job_as_running_if_it_is_running() {
-        List<JobView> views = asFollows(
+        final List<JobView> views = asFollows(
                 JobView.of(a(job().whereTheLast(build().hasntStartedYet()))),
                 JobView.of(a(job().whereTheLast(build().isStillBuilding()))),
                 JobView.of(a(job().whereTheLast(build().isStillUpdatingTheLog())))
         );
 
-        for (JobView view : views) {
+        for (final JobView view : views) {
             assertThat(view.status(), containsString("running"));
         }
     }
 
     @Test
     public void should_describe_the_job_as_running_and_successful_if_it_is_running_and_the_previous_build_succeeded() {
-        List<JobView> views = asFollows(
+        final List<JobView> views = asFollows(
                 JobView.of(a(job().
                         whereTheLast(build().hasntStartedYet()).
                         andThePrevious(build().finishedWith(SUCCESS)))),
@@ -246,7 +266,7 @@ public class JobViewTest {
         // assertThat(view.status(), both(containsString("successful")).and(containsString("running")));
         // but then it would require Java 7
 
-        for (JobView view : views) {
+        for (final JobView view : views) {
             assertThat(view.status(), containsString("successful"));
             assertThat(view.status(), containsString("running"));
         }
@@ -254,7 +274,7 @@ public class JobViewTest {
 
     @Test
     public void should_describe_the_job_as_running_and_failing_if_it_is_running_and_the_previous_build_failed() {
-        List<JobView> views = asFollows(
+        final List<JobView> views = asFollows(
                 JobView.of(a(job().
                         whereTheLast(build().hasntStartedYet()).
                         andThePrevious(build().finishedWith(FAILURE)))),
@@ -268,7 +288,7 @@ public class JobViewTest {
                         andThePrevious(build().finishedWith(FAILURE))))
         );
 
-        for (JobView view : views) {
+        for (final JobView view : views) {
             assertThat(view.status(), containsString("failing"));
             assertThat(view.status(), containsString("running"));
         }
@@ -391,7 +411,7 @@ public class JobViewTest {
 
     @Test
     public void should_know_if_a_failing_build_has_been_claimed() throws Exception {
-        String ourPotentialHero = "Adam",
+        final String ourPotentialHero = "Adam",
                theReason        = "I broke it, sorry, fixing now";
 
         view = JobView.of(
@@ -406,7 +426,7 @@ public class JobViewTest {
 
     @Test
     public void should_describe_known_failures() {
-        String rogueAi = "Pod bay doors didn't open";
+        final String rogueAi = "Pod bay doors didn't open";
 
         view = JobView.of(
                 a(job().whereTheLast(build().finishedWith(FAILURE).andKnownFailures(rogueAi))),
@@ -426,7 +446,7 @@ public class JobViewTest {
         assertThat(view.estimatedDuration(), is(""));
         assertThat(view.progress(),          is(0));
         assertThat(view.culprits(),          hasSize(0));
-        assertThat(view.status(),            is("failing"));
+        assertThat(view.status(),            is("not_built"));
         assertThat(view.isClaimed(),         is(false));
         assertThat(view.hasKnownFailures(),  is(false));
     }
@@ -439,7 +459,7 @@ public class JobViewTest {
         return new JobStateRecipe();
     }
 
-    private Job<?, ?> a(JobStateRecipe recipe) {
+    private Job<?, ?> a(final JobStateRecipe recipe) {
         return recipe.execute();
     }
 
@@ -447,22 +467,22 @@ public class JobViewTest {
         return new BuildStateRecipe();
     }
 
-    private Date assumingThatCurrentTimeIs(String currentTime) throws ParseException {
-        Date currentDate = new SimpleDateFormat("H:m:s").parse(currentTime);
+    private Date assumingThatCurrentTimeIs(final String currentTime) throws ParseException {
+        final Date currentDate = new SimpleDateFormat("H:m:s").parse(currentTime);
 
-        Date systemTime = mock(Date.class);
+        final Date systemTime = mock(Date.class);
         when(systemTime.getTime()).thenReturn(currentDate.getTime());
 
         return systemTime;
     }
 
-    private BuildAugmentor augmentedWith(Class<? extends Augmentation>... augmentationsToSupport) {
-        BuildAugmentor augmentor = new BuildAugmentor();
+    private BuildAugmentor augmentedWith(final Class<? extends Augmentation>... augmentationsToSupport) {
+        final BuildAugmentor augmentor = new BuildAugmentor();
 
-        for (Class<? extends Augmentation> augmentation : augmentationsToSupport) {
+        for (final Class<? extends Augmentation> augmentation : augmentationsToSupport) {
             augmentor.support(augmentation);
         }
 
         return augmentor;
-    }    
+    }
 }
