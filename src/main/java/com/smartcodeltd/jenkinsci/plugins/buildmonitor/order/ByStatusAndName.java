@@ -12,9 +12,16 @@ public class ByStatusAndName implements Comparator<AbstractProject> {
     public int compare(final AbstractProject a, final AbstractProject b) {
         final Run lastBuildA = lastCompletedBuild(a);
         final Run lastBuildB = lastCompletedBuild(b);
-        final int resultCompare = compare(lastBuildA.getResult(), lastBuildB.getResult());
-        if (resultCompare != 0)
-            return resultCompare;
+        if (lastBuildA == null && lastBuildB != null)
+            return 1;
+        if (lastBuildA != null && lastBuildB == null)
+            return -1;
+        if (lastBuildA != null && lastBuildB != null) {
+            final int resultCompare =
+                    compare(lastBuildA.getResult(), lastBuildB.getResult());
+            if (resultCompare != 0)
+                return resultCompare;
+        }
         return a.getName().compareToIgnoreCase(b.getName());
     }
 
@@ -28,6 +35,8 @@ public class ByStatusAndName implements Comparator<AbstractProject> {
 
     private Run lastCompletedBuild(final AbstractProject a) {
         final Run lastBuild = a.getLastBuild();
+        if (lastBuild == null)
+            return null;
         if (!lastBuild.isBuilding()) {
             return lastBuild;
         }
@@ -36,10 +45,11 @@ public class ByStatusAndName implements Comparator<AbstractProject> {
 
     private Run lastCompletedBuild(final Run build) {
         final Run previousBuild = build.getPreviousBuild();
+        if (previousBuild == null)
+            return null;
         if (!previousBuild.isBuilding())
             return previousBuild;
         return lastCompletedBuild(previousBuild);
     }
-
 
 }
