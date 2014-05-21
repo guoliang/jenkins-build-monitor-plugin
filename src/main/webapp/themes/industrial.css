@@ -315,6 +315,11 @@ h2 {
     -webkit-flex: 1 48%;
     flex: 1 48%;
 }
+.build-monitor ul#job-views li.failing,
+.build-monitor ul#job-views li.unstable {
+    -webkit-flex: 1 99%;
+    flex: 1 99%;
+}
 .build-monitor ul#job-views.columns-3 li {
     -webkit-flex: 1 32%;
     flex: 1 32%;
